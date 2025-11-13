@@ -1,0 +1,75 @@
+# Simplified Azure Pipeline - Direct PowerShell execution
+# Alternative to the main pipeline if you prefer simpler approach
+
+trigger: none
+
+pr: none
+
+parameters:
+  - name: environment
+    displayName: 'Environment'
+    type: string
+    default: 'dev'
+    values:
+      - dev
+      - staging
+      - prod
+  
+  - name: action
+    displayName: 'Action'
+    type: string
+    default: 'Maintenance'
+    values:
+      - Maintenance
+      - Normal
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  - name: workingDirectory
+    value: '$(System.DefaultWorkingDirectory)'
+
+stages:
+  - stage: Approval
+    displayName: 'Approval Required'
+    jobs:
+      - job: WaitForApproval
+        displayName: 'Wait for Manual Approval'
+        pool: server
+        steps:
+          - task: ManualValidation@0
+            displayName: 'Approve App Gateway Changes'
+            inputs:
+              notifyUsers: ''
+              onTimeout: 'reject'
+              instructions: |
+                Please review the changes before proceeding.
+                
+                Environment: ${{ parameters.environment }}
+                Action: ${{ parameters.action }}
+                
+                This will modify the App Gateway routing rules specified in the configuration file.
+              onReject: 'reject'
+
+  - stage: ManageAppGateway
+    displayName: 'Manage App Gateway'
+    dependsOn: Approval
+    jobs:
+      - job: SetRedirect
+        displayName: 'Set App Gateway Redirect'
+        steps:
+          - checkout: self
+          
+          - task: AzurePowerShell@5
+            displayName: 'Execute Redirect Script'
+            inputs:
+              azureSubscription: 'Azure-ServiceConnection-${{ parameters.environment }}'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(workingDirectory)/Scripts/Invoke-AppGatewayRedirect.ps1'
+              ScriptArguments: >
+                -Environment '${{ parameters.environment }}'
+                -Action '${{ parameters.action }}'
+              azurePowerShellVersion: 'LatestVersion'
+              pwsh: true
+

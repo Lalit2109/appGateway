@@ -1,0 +1,53 @@
+{
+  "environments": {
+    "dev": {
+      "resourceGroupName": "rg-appgateway-dev",
+      "appGatewayName": "agw-dev",
+      "subscriptionId": "your-dev-subscription-id",
+      "maintenanceBackendPoolURL": "https://maintenance-dev.example.com",
+      "maintenanceBackendPoolPort": 443,
+      "routingRulesToProcess": [
+        "rule-api",
+        "rule-web"
+      ],
+      "routingRules": [
+        "rule-api",
+        "rule-web",
+        "rule-admin"
+      ]
+    },
+    "staging": {
+      "resourceGroupName": "rg-appgateway-staging",
+      "appGatewayName": "agw-staging",
+      "subscriptionId": "your-staging-subscription-id",
+      "maintenanceBackendPoolURL": "https://maintenance-staging.example.com",
+      "maintenanceBackendPoolPort": 443,
+      "routingRulesToProcess": [
+        "rule-api",
+        "rule-web"
+      ],
+      "routingRules": [
+        "rule-api",
+        "rule-web",
+        "rule-admin"
+      ]
+    },
+    "prod": {
+      "resourceGroupName": "rg-appgateway-prod",
+      "appGatewayName": "agw-prod",
+      "subscriptionId": "your-prod-subscription-id",
+      "maintenanceBackendPoolURL": "https://maintenance-prod.example.com",
+      "maintenanceBackendPoolPort": 443,
+      "routingRulesToProcess": [
+        "rule-api",
+        "rule-web"
+      ],
+      "routingRules": [
+        "rule-api",
+        "rule-web",
+        "rule-admin"
+      ]
+    }
+  }
+}
+

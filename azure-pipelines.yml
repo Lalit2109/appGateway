@@ -1,0 +1,150 @@
+# Azure Pipeline for App Gateway Maintenance Mode Management
+# This pipeline allows you to switch App Gateway routing rules between
+# maintenance mode (static page) and normal mode (backend pool)
+
+trigger: none  # Manual trigger only for safety
+
+pr: none
+
+parameters:
+  - name: environment
+    displayName: 'Environment'
+    type: string
+    default: 'dev'
+    values:
+      - dev
+      - staging
+      - prod
+  
+  - name: action
+    displayName: 'Action'
+    type: string
+    default: 'Maintenance'
+    values:
+      - Maintenance
+      - Normal
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  - group: 'AppGateway-Config'  # Optional: Store sensitive config in Variable Groups
+  - name: workingDirectory
+    value: '$(System.DefaultWorkingDirectory)'
+
+stages:
+  - stage: Validate
+    displayName: 'Validate Parameters'
+    jobs:
+      - job: ValidateParameters
+        displayName: 'Check Required Parameters'
+        steps:
+          - task: PowerShell@2
+            displayName: 'Validate Input Parameters'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Validating parameters..."
+                Write-Host "Environment: ${{ parameters.environment }}"
+                Write-Host "Action: ${{ parameters.action }}"
+                
+                # Validate config file exists
+                $configPath = "$(workingDirectory)/config/environments.json"
+                if (Test-Path $configPath) {
+                  $config = Get-Content $configPath -Raw | ConvertFrom-Json
+                  $envConfig = $config.environments.'${{ parameters.environment }}'
+                  if ($envConfig) {
+                    Write-Host "Configuration loaded for environment: ${{ parameters.environment }}"
+                    Write-Host "Maintenance URL: $($envConfig.maintenanceBackendPoolURL)"
+                    if ($envConfig.routingRulesToProcess) {
+                      Write-Host "Routing Rules to Process: $($envConfig.routingRulesToProcess -join ', ')" -ForegroundColor Yellow
+                    } else {
+                      Write-Host "WARNING: No routingRulesToProcess specified in config. All rules will be processed." -ForegroundColor Yellow
+                    }
+                    Write-Host "All Available Routing Rules: $($envConfig.routingRules -join ', ')"
+                  }
+                } else {
+                  Write-Warning "Config file not found at: $configPath"
+                }
+                
+                Write-Host "Validation complete."
+
+  - stage: Approval
+    displayName: 'Approval Required'
+    dependsOn: Validate
+    jobs:
+      - job: WaitForApproval
+        displayName: 'Wait for Manual Approval'
+        pool: server
+        steps:
+          - task: ManualValidation@0
+            displayName: 'Approve App Gateway Changes'
+            inputs:
+              notifyUsers: ''
+              onTimeout: 'reject'
+              instructions: |
+                Please review the changes before proceeding.
+                
+                Environment: ${{ parameters.environment }}
+                Action: ${{ parameters.action }}
+                
+                This will modify the App Gateway routing rules specified in the configuration file.
+                Check the Validation stage output for the specific routing rules that will be affected.
+              onReject: 'reject'
+
+  - stage: ManageAppGateway
+    displayName: 'Manage App Gateway Routing'
+    dependsOn: Approval
+    jobs:
+      - job: SetAppGatewayRedirect
+        displayName: 'Set App Gateway Redirect'
+        steps:
+          - checkout: self
+            displayName: 'Checkout Repository'
+          
+          - task: AzurePowerShell@5
+            displayName: 'Azure Login'
+            inputs:
+              azureSubscription: 'Azure-ServiceConnection-${{ parameters.environment }}'  # Update with your service connection name
+              ScriptType: 'FilePath'
+              ScriptPath: '$(workingDirectory)/Scripts/Invoke-AppGatewayRedirect.ps1'
+              ScriptArguments: >
+                -Environment '${{ parameters.environment }}'
+                -Action '${{ parameters.action }}'
+              azurePowerShellVersion: 'LatestVersion'
+              pwsh: true
+          
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish State File'
+            condition: always()
+            inputs:
+              targetPath: '$(workingDirectory)/Scripts'
+              artifact: 'appgateway-state-${{ parameters.environment }}'
+              publishLocation: 'pipeline'
+
+  - stage: Notify
+    displayName: 'Send Notifications'
+    dependsOn: ManageAppGateway
+    condition: always()
+    jobs:
+      - job: SendNotification
+        displayName: 'Notify Team'
+        steps:
+          - task: PowerShell@2
+            displayName: 'Log Operation Result'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "========================================"
+                Write-Host "App Gateway Redirect Operation Summary"
+                Write-Host "========================================"
+                Write-Host "Environment: ${{ parameters.environment }}"
+                Write-Host "Action: ${{ parameters.action }}"
+                Write-Host "Status: $(Agent.JobStatus)"
+                Write-Host ""
+                Write-Host "Note: Check the script output above for details on which routing rules were processed."
+                Write-Host "========================================"
+                
+                # You can add email/Slack/Teams notification here
+                # Example: Send email using Send-MailMessage or call webhook
+

@@ -1,0 +1,24 @@
+# State files (contain runtime state, should not be committed)
+appgateway-state-*.json
+
+# PowerShell module cache
+*.psm1.cache
+
+# Azure credentials
+*.publishsettings
+*.azureProfile
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
