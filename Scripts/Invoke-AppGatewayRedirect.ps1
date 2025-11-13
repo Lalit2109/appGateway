@@ -12,8 +12,6 @@
 .PARAMETER Action
     The action to perform: 'Maintenance' or 'Normal'.
 
-# Note: All routing rules for the environment will be modified automatically.
-
 .PARAMETER ConfigPath
     Path to the environments.json configuration file (default: ..\config\environments.json).
 
@@ -39,11 +37,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Get script directory
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $configFullPath = Join-Path $scriptDir $ConfigPath
 
-# Load configuration
 if (-not (Test-Path $configFullPath)) {
     throw "Configuration file not found: $configFullPath"
 }
@@ -63,32 +59,59 @@ Write-Host "Environment: $Environment" -ForegroundColor Yellow
 Write-Host "Action: $Action" -ForegroundColor Yellow
 Write-Host "Resource Group: $($envConfig.resourceGroupName)" -ForegroundColor Yellow
 Write-Host "App Gateway: $($envConfig.appGatewayName)" -ForegroundColor Yellow
-Write-Host "Routing Rules: $($envConfig.routingRules -join ', ')" -ForegroundColor Yellow
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Build parameters for Set-AppGatewayRedirect.ps1
 $scriptParams = @{
     ResourceGroupName = $envConfig.resourceGroupName
     AppGatewayName = $envConfig.appGatewayName
     Action = $Action
     SubscriptionId = $envConfig.subscriptionId
-    StateFilePath = ".\appgateway-state-$Environment.json"
 }
 
-# Add maintenance parameters if switching to maintenance mode
 if ($Action -eq "Maintenance") {
-    $scriptParams.MaintenanceBackendPoolURL = $envConfig.maintenanceBackendPoolURL
-    $scriptParams.MaintenanceBackendPoolPort = $envConfig.maintenanceBackendPoolPort
+    if (-not $envConfig.maintenance) {
+        throw "maintenance configuration not found for environment '$Environment'"
+    }
+    if (-not $envConfig.maintenance.redirectURL) {
+        throw "maintenance.redirectURL is required in configuration for environment '$Environment'"
+    }
+    $scriptParams.MaintenanceRedirectURL = $envConfig.maintenance.redirectURL
+    
+    $routingRulesConfig = @()
+    foreach ($ruleName in $envConfig.maintenance.routingRules) {
+        $routingRulesConfig += @{
+            ruleName = $ruleName
+        }
+    }
+    $scriptParams.RoutingRulesConfig = $routingRulesConfig
+    
+    Write-Host "Maintenance Redirect URL: $($envConfig.maintenance.redirectURL)" -ForegroundColor Yellow
+    Write-Host "Routing Rules: $($envConfig.maintenance.routingRules -join ', ')" -ForegroundColor Yellow
 }
 
-# Add routing rules to process if specified in config
-if ($envConfig.routingRulesToProcess -and $envConfig.routingRulesToProcess.Count -gt 0) {
-    $scriptParams.RoutingRulesToProcess = $envConfig.routingRulesToProcess
-    Write-Host "Routing Rules to Process: $($envConfig.routingRulesToProcess -join ', ')" -ForegroundColor Yellow
+if ($Action -eq "Normal") {
+    if (-not $envConfig.normal) {
+        throw "normal configuration not found for environment '$Environment'"
+    }
+    if (-not $envConfig.normal.routingRules) {
+        throw "normal.routingRules is required in configuration for environment '$Environment'"
+    }
+    
+    $scriptParams.RoutingRulesConfig = $envConfig.normal.routingRules | ForEach-Object {
+        @{
+            ruleName = $_.ruleName
+            normalBackendPoolName = $_.backendPoolName
+            normalBackendSettings = $_.backendSettings
+        }
+    }
+    
+    Write-Host "Routing Rules to Restore:" -ForegroundColor Yellow
+    foreach ($ruleConfig in $envConfig.normal.routingRules) {
+        Write-Host "  - $($ruleConfig.ruleName): Pool=$($ruleConfig.backendPoolName), Settings=$($ruleConfig.backendSettings)" -ForegroundColor Yellow
+    }
 }
 
-# Call the main script
 $mainScriptPath = Join-Path $scriptDir "Set-AppGatewayRedirect.ps1"
 
 Write-Host "Executing: $mainScriptPath" -ForegroundColor Green
@@ -104,4 +127,3 @@ Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Operation completed successfully!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Cyan
-

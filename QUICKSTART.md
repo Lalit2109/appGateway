@@ -13,9 +13,19 @@ Edit `config/environments.json`:
       "resourceGroupName": "rg-appgateway-prod",
       "appGatewayName": "agw-prod",
       "subscriptionId": "12345678-1234-1234-1234-123456789012",
-      "maintenanceBackendPoolIP": "10.0.3.100",
-      "maintenanceBackendPoolPort": 80,
-      "routingRules": ["rule-api", "rule-web"]
+      "maintenanceRedirectURL": "https://www.google.com",
+      "routingRulesToProcess": [
+        {
+          "ruleName": "rule-api",
+          "normalBackendPoolName": "api-backend-pool",
+          "normalBackendSettings": "api-backend-settings"
+        },
+        {
+          "ruleName": "rule-web",
+          "normalBackendPoolName": "web-backend-pool",
+          "normalBackendSettings": "web-backend-settings"
+        }
+      ]
     }
   }
 }
@@ -46,7 +56,6 @@ Edit `config/environments.json`:
 2. Select:
    - Environment: `prod`
    - Action: `Maintenance`
-   - Routing Rule: (leave empty for all rules)
 
 #### Via PowerShell (Local):
 ```powershell
@@ -78,15 +87,6 @@ Connect-AzAccount
    Pipeline → Run → Environment: prod, Action: Normal
    ```
 
-### Single Routing Rule
-
-To affect only one routing rule:
-```
-Pipeline → Run → 
-  Environment: prod
-  Action: Maintenance
-  Routing Rule: rule-api
-```
 
 ## Troubleshooting
 
@@ -94,9 +94,9 @@ Pipeline → Run →
 - Check resource group and App Gateway names in `environments.json`
 - Verify service connection has access
 
-**"No saved state found" (when switching to Normal)**
-- State file might be missing
-- Manually configure in Azure Portal, or re-run Maintenance mode first
+**"Backend pool not found" (when switching to Normal)**
+- Verify `normalBackendPoolName` in config matches the actual pool name in App Gateway
+- Check that the backend pool exists in your App Gateway
 
 **Script fails with permission errors**
 - Ensure service connection has `Contributor` role on resource group

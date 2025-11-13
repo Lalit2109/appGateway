@@ -55,13 +55,16 @@ stages:
                   $envConfig = $config.environments.'${{ parameters.environment }}'
                   if ($envConfig) {
                     Write-Host "Configuration loaded for environment: ${{ parameters.environment }}"
-                    Write-Host "Maintenance URL: $($envConfig.maintenanceBackendPoolURL)"
-                    if ($envConfig.routingRulesToProcess) {
-                      Write-Host "Routing Rules to Process: $($envConfig.routingRulesToProcess -join ', ')" -ForegroundColor Yellow
-                    } else {
-                      Write-Host "WARNING: No routingRulesToProcess specified in config. All rules will be processed." -ForegroundColor Yellow
+                    if ($envConfig.maintenance) {
+                      Write-Host "Maintenance Redirect URL: $($envConfig.maintenance.redirectURL)" -ForegroundColor Yellow
+                      Write-Host "Maintenance Routing Rules: $($envConfig.maintenance.routingRules -join ', ')" -ForegroundColor Yellow
                     }
-                    Write-Host "All Available Routing Rules: $($envConfig.routingRules -join ', ')"
+                    if ($envConfig.normal) {
+                      Write-Host "Normal Mode Routing Rules:" -ForegroundColor Yellow
+                      foreach ($rule in $envConfig.normal.routingRules) {
+                        Write-Host "  - $($rule.ruleName): Pool=$($rule.backendPoolName)" -ForegroundColor Yellow
+                      }
+                    }
                   }
                 } else {
                   Write-Warning "Config file not found at: $configPath"
@@ -114,13 +117,6 @@ stages:
               azurePowerShellVersion: 'LatestVersion'
               pwsh: true
           
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish State File'
-            condition: always()
-            inputs:
-              targetPath: '$(workingDirectory)/Scripts'
-              artifact: 'appgateway-state-${{ parameters.environment }}'
-              publishLocation: 'pipeline'
 
   - stage: Notify
     displayName: 'Send Notifications'

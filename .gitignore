@@ -1,6 +1,3 @@
-# State files (contain runtime state, should not be committed)
-appgateway-state-*.json
-
 # PowerShell module cache
 *.psm1.cache
 

@@ -4,50 +4,79 @@
       "resourceGroupName": "rg-appgateway-dev",
       "appGatewayName": "agw-dev",
       "subscriptionId": "your-dev-subscription-id",
-      "maintenanceBackendPoolURL": "https://maintenance-dev.example.com",
-      "maintenanceBackendPoolPort": 443,
-      "routingRulesToProcess": [
-        "rule-api",
-        "rule-web"
-      ],
-      "routingRules": [
-        "rule-api",
-        "rule-web",
-        "rule-admin"
-      ]
+      "maintenance": {
+        "redirectURL": "https://www.google.com",
+        "routingRules": [
+          "rule-api",
+          "rule-web"
+        ]
+      },
+      "normal": {
+        "routingRules": [
+          {
+            "ruleName": "rule-api",
+            "backendPoolName": "api-backend-pool",
+            "backendSettings": "api-backend-settings"
+          },
+          {
+            "ruleName": "rule-web",
+            "backendPoolName": "web-backend-pool",
+            "backendSettings": "web-backend-settings"
+          }
+        ]
+      }
     },
     "staging": {
       "resourceGroupName": "rg-appgateway-staging",
       "appGatewayName": "agw-staging",
       "subscriptionId": "your-staging-subscription-id",
-      "maintenanceBackendPoolURL": "https://maintenance-staging.example.com",
-      "maintenanceBackendPoolPort": 443,
-      "routingRulesToProcess": [
-        "rule-api",
-        "rule-web"
-      ],
-      "routingRules": [
-        "rule-api",
-        "rule-web",
-        "rule-admin"
-      ]
+      "maintenance": {
+        "redirectURL": "https://www.google.com",
+        "routingRules": [
+          "rule-api",
+          "rule-web"
+        ]
+      },
+      "normal": {
+        "routingRules": [
+          {
+            "ruleName": "rule-api",
+            "backendPoolName": "api-backend-pool",
+            "backendSettings": "api-backend-settings"
+          },
+          {
+            "ruleName": "rule-web",
+            "backendPoolName": "web-backend-pool",
+            "backendSettings": "web-backend-settings"
+          }
+        ]
+      }
     },
     "prod": {
       "resourceGroupName": "rg-appgateway-prod",
       "appGatewayName": "agw-prod",
       "subscriptionId": "your-prod-subscription-id",
-      "maintenanceBackendPoolURL": "https://maintenance-prod.example.com",
-      "maintenanceBackendPoolPort": 443,
-      "routingRulesToProcess": [
-        "rule-api",
-        "rule-web"
-      ],
-      "routingRules": [
-        "rule-api",
-        "rule-web",
-        "rule-admin"
-      ]
+      "maintenance": {
+        "redirectURL": "https://www.google.com",
+        "routingRules": [
+          "rule-api",
+          "rule-web"
+        ]
+      },
+      "normal": {
+        "routingRules": [
+          {
+            "ruleName": "rule-api",
+            "backendPoolName": "api-backend-pool",
+            "backendSettings": "api-backend-settings"
+          },
+          {
+            "ruleName": "rule-web",
+            "backendPoolName": "web-backend-pool",
+            "backendSettings": "web-backend-settings"
+          }
+        ]
+      }
     }
   }
 }
-

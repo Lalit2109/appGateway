@@ -11,7 +11,7 @@ When infrastructure engineers need to perform patching on backend servers, this 
 The solution supports:
 - ✅ Multiple environments (dev, staging, prod)
 - ✅ Multiple routing rules per environment
-- ✅ State management to track original configurations
+- ✅ Configuration-driven restoration (no state files needed)
 - ✅ Azure Pipeline integration for easy execution
 
 ## Architecture
@@ -72,11 +72,18 @@ Edit `config/environments.json` with your environment details:
       "resourceGroupName": "rg-appgateway-dev",
       "appGatewayName": "agw-dev",
       "subscriptionId": "your-dev-subscription-id",
-      "maintenanceBackendPoolURL": "https://maintenance-dev.example.com",
-      "maintenanceBackendPoolPort": 443,
+      "maintenanceRedirectURL": "https://www.google.com",
       "routingRulesToProcess": [
-        "rule-api",
-        "rule-web"
+        {
+          "ruleName": "rule-api",
+          "normalBackendPoolName": "api-backend-pool",
+          "normalBackendSettings": "api-backend-settings"
+        },
+        {
+          "ruleName": "rule-web",
+          "normalBackendPoolName": "web-backend-pool",
+          "normalBackendSettings": "web-backend-settings"
+        }
       ],
       "routingRules": [
         "rule-api",
@@ -89,10 +96,12 @@ Edit `config/environments.json` with your environment details:
 ```
 
 **Important Configuration Notes:**
-- `routingRulesToProcess`: Specifies which routing rules will be modified (typically 2 rules as per your requirement)
-- `routingRules`: Lists all available routing rules in the App Gateway (for reference)
-- `maintenanceBackendPoolURL`: HTTPS URL of the maintenance page (e.g., `https://maintenance.example.com`)
-- `maintenanceBackendPoolPort`: Port number (443 for HTTPS, 80 for HTTP)
+- `maintenanceRedirectURL`: External URL to redirect to during maintenance (e.g., https://www.google.com)
+- `routingRulesToProcess`: Array of routing rule configurations to modify (typically 2 rules)
+  - `ruleName`: Name of the routing rule in App Gateway
+  - `normalBackendPoolName`: Backend pool name to restore in Normal mode (must exist in App Gateway)
+  - `normalBackendSettings`: Backend HTTP settings name to restore in Normal mode (must exist in App Gateway)
+- `routingRules`: Lists all available routing rules in the App Gateway (for reference only)
 
 ### 2. Configure Azure Pipeline
 
@@ -103,12 +112,13 @@ Edit `config/environments.json` with your environment details:
    - Configure who can approve pipeline runs
 4. (Optional) Create a Variable Group named `AppGateway-Config` for sensitive values
 
-### 3. Create Maintenance Backend Pool (One-time)
+### 3. Ensure Backend Pools and Settings Exist
 
-The script will automatically create a maintenance backend pool if it doesn't exist. Ensure:
-- The maintenance page server is accessible from the App Gateway
-- The HTTPS URL is correct in the configuration
-- The maintenance page is accessible via HTTPS (port 443) or HTTP (port 80) as configured
+**Important**: All backend pools and backend settings referenced in the configuration must already exist in your App Gateway.
+
+- Ensure backend pools (`normalBackendPoolName`) exist in your App Gateway
+- Ensure backend HTTP settings (`normalBackendSettings`) exist in your App Gateway
+- The names in the configuration must match exactly (case-sensitive) with the names in Azure
 
 ## Usage
 
@@ -146,12 +156,25 @@ The script will automatically create a maintenance backend pool if it doesn't ex
 #### Direct Script Usage (Advanced)
 
 ```powershell
+$rulesConfig = @(
+    @{
+        ruleName = "rule-api"
+        normalBackendPoolName = "api-backend-pool"
+        normalBackendSettings = "api-backend-settings"
+    },
+    @{
+        ruleName = "rule-web"
+        normalBackendPoolName = "web-backend-pool"
+        normalBackendSettings = "web-backend-settings"
+    }
+)
+
 .\Scripts\Set-AppGatewayRedirect.ps1 `
     -ResourceGroupName "rg-prod" `
     -AppGatewayName "agw-prod" `
     -Action Maintenance `
-    -MaintenanceBackendPoolURL "https://maintenance.example.com" `
-    -RoutingRulesToProcess @("rule-api", "rule-web")
+    -MaintenanceRedirectURL "https://www.google.com" `
+    -RoutingRulesConfig $rulesConfig
 ```
 
 ## How It Works
@@ -166,26 +189,22 @@ The script will automatically create a maintenance backend pool if it doesn't ex
 ### Maintenance Mode
 
 1. Script reads the current App Gateway configuration
-2. Filters to only the routing rules specified in `routingRulesToProcess` (typically 2 rules)
-3. Creates or updates a maintenance backend pool with the specified HTTPS URL (FQDN)
-4. **Saves the original backend pool** for each routing rule to a state file
-5. Updates the specified routing rules to point to the maintenance backend pool
+2. Processes routing rules specified in `routingRulesToProcess` (typically 2 rules)
+3. Creates/uses a redirect configuration pointing to the external URL (`maintenanceRedirectURL`)
+4. Updates routing rules to use the redirect configuration (redirects to external site)
+5. Clears backend pool and backend settings from routing rules
 6. Applies the configuration
 
 ### Normal Mode
 
-1. Script loads the state file to retrieve original backend pool information
-2. Filters to only the routing rules specified in `routingRulesToProcess`
-3. Restores each specified routing rule to its original backend pool
-4. Applies the configuration
+1. Script reads backend pool and backend settings names from configuration file
+2. Processes routing rules specified in `routingRulesToProcess`
+3. Finds backend pools and backend settings in App Gateway by name (from config)
+4. Restores each routing rule to use the backend pool and settings specified in config
+5. Clears redirect configuration from routing rules
+6. Applies the configuration
 
-### State Management
-
-State files (`appgateway-state-{environment}.json`) are created automatically to track:
-- Original backend pool for each routing rule
-- Timestamp of last maintenance switch
-
-**Important**: Keep state files safe! They're needed to restore normal mode.
+**Note**: No state files are used. All restoration values come directly from the configuration file.
 
 ## File Structure
 
@@ -212,29 +231,30 @@ App-gateway-Redirect/
 - Check the routing rule names in `environments.json`
 - Ensure the routing rules are spelled correctly (case-sensitive)
 
-### Error: "No saved state found" (Normal mode)
-- The state file may have been deleted or not created
-- You may need to manually configure routing rules in Azure Portal
-- Consider backing up state files to a secure location
+### Error: "Backend pool not found" (Normal mode)
+- Verify the `normalBackendPoolName` in configuration matches the actual pool name in App Gateway
+- Check that the backend pool exists in your App Gateway
+- Ensure the name is spelled correctly (case-sensitive)
 
-### State File Location
-- Local execution: Created in the Scripts directory
-- Pipeline execution: Published as a pipeline artifact
+### Error: "Backend settings not found" (Normal mode)
+- Verify the `normalBackendSettings` in configuration matches the actual settings name in App Gateway
+- Check that the backend HTTP settings exist in your App Gateway
+- Ensure the name is spelled correctly (case-sensitive)
 
 ## Best Practices
 
 1. **Test First**: Always test in dev/staging before production
 2. **Approval Process**: The approval stage provides a safety check - ensure approvers understand the impact
-3. **Backup State**: Consider storing state files in Azure Blob Storage or Key Vault
+3. **Configuration Accuracy**: Ensure all backend pool and backend settings names in config match exactly with App Gateway (case-sensitive)
 4. **Notifications**: Add email/Slack notifications to the pipeline for team awareness
 5. **Monitoring**: Monitor App Gateway metrics during maintenance windows
 6. **Documentation**: Keep `environments.json` updated as routing rules change, especially `routingRulesToProcess`
 7. **Access Control**: Use Azure DevOps pipeline permissions to restrict who can run and approve the pipeline
-8. **Configuration Review**: Review the `routingRulesToProcess` list before running the pipeline
+8. **Configuration Review**: Review the `routingRulesToProcess` configuration before running the pipeline
 
 ## Security Considerations
 
-- ✅ State files contain resource IDs but no secrets
+- ✅ No state files required - all configuration is in the config file
 - ✅ Service connections use managed identities or service principals
 - ✅ Pipeline requires manual trigger (no automatic runs)
 - ⚠️ Consider storing sensitive config in Azure Key Vault
