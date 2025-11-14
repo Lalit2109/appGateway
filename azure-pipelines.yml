@@ -144,9 +144,6 @@ stages:
                 Environment: ${{ parameters.environment }}
                 Sub-Environment: ${{ parameters.subEnvironment }}
                 Action: ${{ parameters.action }}
-                ${{ if eq(parameters.action, 'Maintenance') }}:
-                Maintenance Redirect URL: ${{ parameters.redirectURL }}
-                ${{ endif }}
                 Service Connection (SPN): $(serviceConnectionName)
                 
                 This will modify the App Gateway routing rules specified in the configuration file.
