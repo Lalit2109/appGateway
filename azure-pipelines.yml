@@ -128,73 +128,76 @@ stages:
     displayName: 'Approval Required'
     dependsOn: Validate
     jobs:
-      - job: WaitForApproval
+      - deployment: WaitForApproval
         displayName: 'Wait for Manual Approval'
-        pool: server
-        steps:
-          - task: ManualValidation@0
-            displayName: 'Approve App Gateway Changes'
-            timeoutInMinutes: 15
-            inputs:
-              notifyUsers: ''
-              onTimeout: 'reject'
-              instructions: |
-                ========================================
-                APP GATEWAY ROUTING RULE CHANGE REQUEST
-                ========================================
-                
-                OPERATION DETAILS:
-                -----------------
-                Environment: ${{ parameters.environment }}
-                Sub-Environment: ${{ parameters.subEnvironment }}
-                Action: ${{ parameters.action }}
-                App Gateway: (See Validation stage for details)
-                Service Connection (SPN): $(serviceConnectionName)
-                
-                CHANGE SUMMARY:
-                --------------
-                This operation will modify routing rules in the Application Gateway.
-                
-                What will happen:
-                • Routing rules specified in the configuration will be updated
-                • Changes will be applied immediately upon approval
-                • All affected routing rules will be modified in a single operation
-                
-                For MAINTENANCE Mode:
-                • Routing rules will redirect all traffic to an external URL
-                • Backend pools and backend settings will be removed from routing rules
-                • Users will be redirected away from backend services
-                • Redirect URL: ${{ parameters.redirectURL }}
-                
-                For NORMAL Mode:
-                • Routing rules will be restored to use configured backend pools
-                • Backend HTTP settings will be reattached to routing rules
-                • Redirect configuration will be removed
-                • Normal traffic flow to backend services will resume
-                
-                Impact:
-                ⚠️  This change affects ALL traffic to the specified routing rules
-                ⚠️  Changes are immediate and cannot be undone automatically
-                ⚠️  Review the Validation stage output for specific routing rule names
-                
-                Routing Rules Affected:
-                (Check the Validation stage output above for the specific routing rule names, backend pools, and settings)
-                
-                To verify what will change:
-                1. Review the Validation stage output above for complete details
-                2. Check the routing rules listed in the configuration file
-                3. For Maintenance: Confirm the redirect URL is correct
-                4. For Normal: Verify backend pool and settings names match your configuration
-                
-                IMPORTANT NOTES:
-                ---------------
-                • This approval will timeout after 15 minutes if not approved
-                • Once approved, changes will be applied immediately
-                • Review the Validation stage output for complete configuration details
-                • Ensure you have verified the correct environment and sub-environment
-                • Double-check the Action (Maintenance/Normal) is correct for your intent
-                
-                ========================================
+        environment: 'AppGateway-Maintenance'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: ManualValidation@0
+                  displayName: 'Approve App Gateway Changes'
+                  timeoutInMinutes: 15
+                  inputs:
+                    notifyUsers: ''
+                    onTimeout: 'reject'
+                    instructions: |
+                      ========================================
+                      APP GATEWAY ROUTING RULE CHANGE REQUEST
+                      ========================================
+                      
+                      OPERATION DETAILS:
+                      -----------------
+                      Environment: ${{ parameters.environment }}
+                      Sub-Environment: ${{ parameters.subEnvironment }}
+                      Action: ${{ parameters.action }}
+                      App Gateway: (See Validation stage for details)
+                      Service Connection (SPN): $(serviceConnectionName)
+                      
+                      CHANGE SUMMARY:
+                      --------------
+                      This operation will modify routing rules in the Application Gateway.
+                      
+                      What will happen:
+                      • Routing rules specified in the configuration will be updated
+                      • Changes will be applied immediately upon approval
+                      • All affected routing rules will be modified in a single operation
+                      
+                      For MAINTENANCE Mode:
+                      • Routing rules will redirect all traffic to an external URL
+                      • Backend pools and backend settings will be removed from routing rules
+                      • Users will be redirected away from backend services
+                      • Redirect URL: ${{ parameters.redirectURL }}
+                      
+                      For NORMAL Mode:
+                      • Routing rules will be restored to use configured backend pools
+                      • Backend HTTP settings will be reattached to routing rules
+                      • Redirect configuration will be removed
+                      • Normal traffic flow to backend services will resume
+                      
+                      Impact:
+                      ⚠️  This change affects ALL traffic to the specified routing rules
+                      ⚠️  Changes are immediate and cannot be undone automatically
+                      ⚠️  Review the Validation stage output for specific routing rule names
+                      
+                      Routing Rules Affected:
+                      (Check the Validation stage output above for the specific routing rule names, backend pools, and settings)
+                      
+                      To verify what will change:
+                      1. Review the Validation stage output above for complete details
+                      2. Check the routing rules listed in the configuration file
+                      3. For Maintenance: Confirm the redirect URL is correct
+                      4. For Normal: Verify backend pool and settings names match your configuration
+                      
+                      IMPORTANT NOTES:
+                      ---------------
+                      • This approval will timeout after 15 minutes if not approved
+                      • Once approved, changes will be applied immediately
+                      • Review the Validation stage output for complete configuration details
+                      • Ensure you have verified the correct environment and sub-environment
+                      • Double-check the Action (Maintenance/Normal) is correct for your intent
+                      
+                      ========================================
 
   - stage: ManageAppGateway
     displayName: 'Manage App Gateway Routing'
