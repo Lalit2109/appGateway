@@ -168,13 +168,7 @@ stages:
               azureSubscription: '$(serviceConnectionName)'  # Automatically selected based on environment
               ScriptType: 'FilePath'
               ScriptPath: '$(workingDirectory)/Scripts/Invoke-AppGatewayRedirect.ps1'
-              ScriptArguments: >
-                -Environment '${{ parameters.environment }}'
-                -Action '${{ parameters.action }}'
-                -SubEnvironment '${{ parameters.subEnvironment }}'
-                ${{ if eq(parameters.action, 'Maintenance') }}:
-                -MaintenanceRedirectURL '${{ parameters.redirectURL }}'
-                ${{ endif }}
+              ScriptArguments: ${{ if eq(parameters.action, 'Maintenance') }}'-Environment ''${{ parameters.environment }}'' -Action ''${{ parameters.action }}'' -SubEnvironment ''${{ parameters.subEnvironment }}'' -MaintenanceRedirectURL ''${{ parameters.redirectURL }}'''${{ else }}'-Environment ''${{ parameters.environment }}'' -Action ''${{ parameters.action }}'' -SubEnvironment ''${{ parameters.subEnvironment }}'''${{ endif }}
               azurePowerShellVersion: 'LatestVersion'
               pwsh: true
           
