@@ -23,6 +23,23 @@ parameters:
     values:
       - Maintenance
       - Normal
+  
+  - name: subEnvironment
+    displayName: 'Sub-Environment'
+    type: string
+    default: 'dev'
+    values:
+      - 'dev'
+      - 'dev002'
+      - 'test'
+      - 'test002'
+      - 'prod'
+      - 'prod002'
+  
+  - name: redirectURL
+    displayName: 'Maintenance Redirect URL'
+    type: string
+    default: 'https://www.google.com'
 
 pool:
   vmImage: 'windows-latest'
@@ -55,7 +72,11 @@ stages:
               script: |
                 Write-Host "Validating parameters..."
                 Write-Host "Environment: ${{ parameters.environment }}"
+                Write-Host "Sub-Environment: ${{ parameters.subEnvironment }}" -ForegroundColor Cyan
                 Write-Host "Action: ${{ parameters.action }}"
+                if ('${{ parameters.action }}' -eq 'Maintenance') {
+                  Write-Host "Maintenance Redirect URL: ${{ parameters.redirectURL }}" -ForegroundColor Cyan
+                }
                 Write-Host "Service Connection (SPN): $(serviceConnectionName)" -ForegroundColor Cyan
                 
                 # Validate config file exists
@@ -65,14 +86,35 @@ stages:
                   $envConfig = $config.environments.'${{ parameters.environment }}'
                   if ($envConfig) {
                     Write-Host "Configuration loaded for environment: ${{ parameters.environment }}"
-                    if ($envConfig.maintenance) {
-                      Write-Host "Maintenance Redirect URL: $($envConfig.maintenance.redirectURL)" -ForegroundColor Yellow
-                      Write-Host "Maintenance Routing Rules: $($envConfig.maintenance.routingRules -join ', ')" -ForegroundColor Yellow
-                    }
-                    if ($envConfig.normal) {
-                      Write-Host "Normal Mode Routing Rules:" -ForegroundColor Yellow
-                      foreach ($rule in $envConfig.normal.routingRules) {
-                        Write-Host "  - $($rule.ruleName): Pool=$($rule.backendPoolName)" -ForegroundColor Yellow
+                    if ($envConfig.subEnvironments) {
+                      Write-Host "Sub-Environments structure detected" -ForegroundColor Green
+                      $subEnvParam = '${{ parameters.subEnvironment }}'
+                      if ($envConfig.subEnvironments.$subEnvParam) {
+                        $subEnvConfig = $envConfig.subEnvironments.$subEnvParam
+                        Write-Host "Sub-Environment: $subEnvParam" -ForegroundColor Cyan
+                        if ($subEnvConfig.maintenance) {
+                          Write-Host "Maintenance Routing Rules: $($subEnvConfig.maintenance.routingRules -join ', ')" -ForegroundColor Yellow
+                        }
+                        if ($subEnvConfig.normal) {
+                          Write-Host "Normal Mode Routing Rules:" -ForegroundColor Yellow
+                          foreach ($rule in $subEnvConfig.normal.routingRules) {
+                            Write-Host "  - $($rule.ruleName): Pool=$($rule.backendPoolName)" -ForegroundColor Yellow
+                          }
+                        }
+                      } else {
+                        Write-Warning "Sub-environment '$subEnvParam' not found. Available: $($envConfig.subEnvironments.PSObject.Properties.Name -join ', ')"
+                      }
+                    } else {
+                      # Legacy structure
+                      if ($envConfig.maintenance) {
+                        Write-Host "Maintenance Redirect URL: $($envConfig.maintenance.redirectURL)" -ForegroundColor Yellow
+                        Write-Host "Maintenance Routing Rules: $($envConfig.maintenance.routingRules -join ', ')" -ForegroundColor Yellow
+                      }
+                      if ($envConfig.normal) {
+                        Write-Host "Normal Mode Routing Rules:" -ForegroundColor Yellow
+                        foreach ($rule in $envConfig.normal.routingRules) {
+                          Write-Host "  - $($rule.ruleName): Pool=$($rule.backendPoolName)" -ForegroundColor Yellow
+                        }
                       }
                     }
                   }
@@ -100,7 +142,11 @@ stages:
                 Please review the changes before proceeding.
                 
                 Environment: ${{ parameters.environment }}
+                Sub-Environment: ${{ parameters.subEnvironment }}
                 Action: ${{ parameters.action }}
+                ${{ if eq(parameters.action, 'Maintenance') }}:
+                Maintenance Redirect URL: ${{ parameters.redirectURL }}
+                ${{ endif }}
                 Service Connection (SPN): $(serviceConnectionName)
                 
                 This will modify the App Gateway routing rules specified in the configuration file.
@@ -128,6 +174,10 @@ stages:
               ScriptArguments: >
                 -Environment '${{ parameters.environment }}'
                 -Action '${{ parameters.action }}'
+                -SubEnvironment '${{ parameters.subEnvironment }}'
+                ${{ if eq(parameters.action, 'Maintenance') }}:
+                -MaintenanceRedirectURL '${{ parameters.redirectURL }}'
+                ${{ endif }}
               azurePowerShellVersion: 'LatestVersion'
               pwsh: true
           

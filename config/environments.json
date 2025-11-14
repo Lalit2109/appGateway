@@ -4,78 +4,153 @@
       "resourceGroupName": "rg-appgateway-dev",
       "appGatewayName": "agw-dev",
       "subscriptionId": "your-dev-subscription-id",
-      "maintenance": {
-        "redirectURL": "https://www.google.com",
-        "routingRules": [
-          "rule-api",
-          "rule-web"
-        ]
-      },
-      "normal": {
-        "routingRules": [
-          {
-            "ruleName": "rule-api",
-            "backendPoolName": "api-backend-pool",
-            "backendSettings": "api-backend-settings"
+      "subEnvironments": {
+        "dev": {
+          "maintenance": {
+            "routingRules": [
+              "rule-api-dev",
+              "rule-web-dev"
+            ]
           },
-          {
-            "ruleName": "rule-web",
-            "backendPoolName": "web-backend-pool",
-            "backendSettings": "web-backend-settings"
+          "normal": {
+            "routingRules": [
+              {
+                "ruleName": "rule-api-dev",
+                "backendPoolName": "api-backend-pool-dev",
+                "backendSettings": "api-backend-settings-dev"
+              },
+              {
+                "ruleName": "rule-web-dev",
+                "backendPoolName": "web-backend-pool-dev",
+                "backendSettings": "web-backend-settings-dev"
+              }
+            ]
           }
-        ]
+        },
+        "dev002": {
+          "maintenance": {
+            "routingRules": [
+              "rule-api-dev002",
+              "rule-web-dev002"
+            ]
+          },
+          "normal": {
+            "routingRules": [
+              {
+                "ruleName": "rule-api-dev002",
+                "backendPoolName": "api-backend-pool-dev002",
+                "backendSettings": "api-backend-settings-dev002"
+              },
+              {
+                "ruleName": "rule-web-dev002",
+                "backendPoolName": "web-backend-pool-dev002",
+                "backendSettings": "web-backend-settings-dev002"
+              }
+            ]
+          }
+        }
       }
     },
     "staging": {
       "resourceGroupName": "rg-appgateway-staging",
       "appGatewayName": "agw-staging",
       "subscriptionId": "your-staging-subscription-id",
-      "maintenance": {
-        "redirectURL": "https://www.google.com",
-        "routingRules": [
-          "rule-api",
-          "rule-web"
-        ]
-      },
-      "normal": {
-        "routingRules": [
-          {
-            "ruleName": "rule-api",
-            "backendPoolName": "api-backend-pool",
-            "backendSettings": "api-backend-settings"
+      "subEnvironments": {
+        "test": {
+          "maintenance": {
+            "routingRules": [
+              "rule-api-test",
+              "rule-web-test"
+            ]
           },
-          {
-            "ruleName": "rule-web",
-            "backendPoolName": "web-backend-pool",
-            "backendSettings": "web-backend-settings"
+          "normal": {
+            "routingRules": [
+              {
+                "ruleName": "rule-api-test",
+                "backendPoolName": "api-backend-pool-test",
+                "backendSettings": "api-backend-settings-test"
+              },
+              {
+                "ruleName": "rule-web-test",
+                "backendPoolName": "web-backend-pool-test",
+                "backendSettings": "web-backend-settings-test"
+              }
+            ]
           }
-        ]
+        },
+        "test002": {
+          "maintenance": {
+            "routingRules": [
+              "rule-api-test002",
+              "rule-web-test002"
+            ]
+          },
+          "normal": {
+            "routingRules": [
+              {
+                "ruleName": "rule-api-test002",
+                "backendPoolName": "api-backend-pool-test002",
+                "backendSettings": "api-backend-settings-test002"
+              },
+              {
+                "ruleName": "rule-web-test002",
+                "backendPoolName": "web-backend-pool-test002",
+                "backendSettings": "web-backend-settings-test002"
+              }
+            ]
+          }
+        }
       }
     },
     "prod": {
       "resourceGroupName": "rg-appgateway-prod",
       "appGatewayName": "agw-prod",
       "subscriptionId": "your-prod-subscription-id",
-      "maintenance": {
-        "redirectURL": "https://www.google.com",
-        "routingRules": [
-          "rule-api",
-          "rule-web"
-        ]
-      },
-      "normal": {
-        "routingRules": [
-          {
-            "ruleName": "rule-api",
-            "backendPoolName": "api-backend-pool",
-            "backendSettings": "api-backend-settings"
+      "subEnvironments": {
+        "prod": {
+          "maintenance": {
+            "routingRules": [
+              "rule-api-prod",
+              "rule-web-prod"
+            ]
           },
-          {
-            "ruleName": "rule-web",
-            "backendPoolName": "web-backend-pool",
-            "backendSettings": "web-backend-settings"
+          "normal": {
+            "routingRules": [
+              {
+                "ruleName": "rule-api-prod",
+                "backendPoolName": "api-backend-pool-prod",
+                "backendSettings": "api-backend-settings-prod"
+              },
+              {
+                "ruleName": "rule-web-prod",
+                "backendPoolName": "web-backend-pool-prod",
+                "backendSettings": "web-backend-settings-prod"
+              }
+            ]
           }
-        ]
+        },
+        "prod002": {
+          "maintenance": {
+            "routingRules": [
+              "rule-api-prod002",
+              "rule-web-prod002"
+            ]
+          },
+          "normal": {
+            "routingRules": [
+              {
+                "ruleName": "rule-api-prod002",
+                "backendPoolName": "api-backend-pool-prod002",
+                "backendSettings": "api-backend-settings-prod002"
+              },
+              {
+                "ruleName": "rule-web-prod002",
+                "backendPoolName": "web-backend-pool-prod002",
+                "backendSettings": "web-backend-settings-prod002"
+              }
+            ]
+          }
+        }
       }
     }
   }
