@@ -203,15 +203,31 @@ try {
     Write-Log "Rules Modified: $($rulesToModify.Count)" "INFO"
     foreach ($ruleItem in $rulesToModify) {
         $rule = $ruleItem.Rule
-        if ($rule.RedirectConfiguration) {
-            Write-Log "  - $($rule.Name): Redirect = $($rule.RedirectConfiguration.TargetUrl)" "INFO"
-        } elseif ($rule.BackendAddressPool) {
-            Write-Log "  - $($rule.Name): Backend Pool = $($rule.BackendAddressPool.Name)" "INFO"
+        try {
+            if ($rule.RedirectConfiguration -and $rule.RedirectConfiguration.TargetUrl) {
+                Write-Log "  - $($rule.Name): Redirect = $($rule.RedirectConfiguration.TargetUrl)" "INFO"
+            } elseif ($rule.BackendAddressPool -and $rule.BackendAddressPool.Name) {
+                Write-Log "  - $($rule.Name): Backend Pool = $($rule.BackendAddressPool.Name)" "INFO"
+            } else {
+                Write-Log "  - $($rule.Name): Configuration updated (details in logs above)" "INFO"
+            }
+        } catch {
+            Write-Log "  - $($rule.Name): Configuration updated (unable to read current state)" "WARNING"
         }
     }
     
+    Write-Log "`nOperation completed successfully!" "SUCCESS"
+    exit 0
+    
 } catch {
-    Write-Log "Error: $($_.Exception.Message)" "ERROR"
+    Write-Log "`n=== ERROR OCCURRED ===" "ERROR"
+    Write-Log "Error Message: $($_.Exception.Message)" "ERROR"
+    Write-Log "Error Type: $($_.Exception.GetType().FullName)" "ERROR"
+    if ($_.Exception.InnerException) {
+        Write-Log "Inner Exception: $($_.Exception.InnerException.Message)" "ERROR"
+    }
     Write-Log "Stack Trace: $($_.ScriptStackTrace)" "ERROR"
+    Write-Log "Line Number: $($_.InvocationInfo.ScriptLineNumber)" "ERROR"
+    Write-Log "Command: $($_.InvocationInfo.Line)" "ERROR"
     exit 1
 }
