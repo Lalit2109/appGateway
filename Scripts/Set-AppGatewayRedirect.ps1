@@ -185,9 +185,9 @@ try {
             # $rule.BackendHttpSettings = $backendSettings
             # $rule.RedirectConfiguration = $null
             
-            Write-Log "  Restored backend pool: $($ruleConfig.normalBackendPoolName)" "SUCCESS"
+            Write-Log "  Backend pool: $($ruleConfig.normalBackendPoolName)" "SUCCESS"
             if ($backendSettings) {
-                Write-Log "  Restored backend settings: $($ruleConfig.normalBackendSettings)" "SUCCESS"
+                Write-Log "  Backend settings: $($ruleConfig.normalBackendSettings)" "SUCCESS"
             }
         }
     }

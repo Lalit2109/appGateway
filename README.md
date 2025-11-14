@@ -106,10 +106,15 @@ Edit `config/environments.json` with your environment details:
 ### 2. Configure Azure Pipeline
 
 1. Import the pipeline (`azure-pipelines.yml`) into your Azure DevOps project
-2. Update the service connection names in the pipeline YAML if different
-3. **Configure Approval**: The pipeline includes an approval stage. You may need to:
+2. **Create Service Principal Connections**: Create service connections for each environment:
+   - `SPN-dev` - Service Principal for dev environment
+   - `SPN-staging` - Service Principal for staging environment
+   - `SPN-prod` - Service Principal for prod environment
+   - Each SPN needs `Contributor` role on the respective App Gateway resource group
+3. **Configure Approval**: The pipeline includes an approval stage with 15-minute timeout. You may need to:
    - Set up approval policies in Azure DevOps (Project Settings → Pipelines → Approvals)
    - Configure who can approve pipeline runs
+   - Approval will automatically reject after 15 minutes if not approved
 4. (Optional) Create a Variable Group named `AppGateway-Config` for sensitive values
 
 ### 3. Ensure Backend Pools and Settings Exist
