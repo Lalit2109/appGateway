@@ -7,13 +7,10 @@
     Set-AppGatewayRedirect.ps1 for the specified environment and routing rules.
 
 .PARAMETER Environment
-    The environment name (dev, staging, prod) as defined in environments.json.
+    The environment name (dev, dev002, test, test002, prod, prod002) as defined in environments.json.
 
 .PARAMETER Action
     The action to perform: 'Maintenance' or 'Normal'.
-
-.PARAMETER SubEnvironment
-    Sub-environment name (e.g., dev002, test002, prod002). Required.
 
 .PARAMETER MaintenanceRedirectURL
     Maintenance redirect URL (required when Action is 'Maintenance'). Default: https://www.google.com
@@ -22,10 +19,10 @@
     Path to the environments.json configuration file (default: ..\config\environments.json).
 
 .EXAMPLE
-    .\Invoke-AppGatewayRedirect.ps1 -Environment prod -Action Maintenance -SubEnvironment prod -MaintenanceRedirectURL 'https://www.google.com'
+    .\Invoke-AppGatewayRedirect.ps1 -Environment prod -Action Maintenance -MaintenanceRedirectURL 'https://www.google.com'
 
 .EXAMPLE
-    .\Invoke-AppGatewayRedirect.ps1 -Environment dev -Action Normal -SubEnvironment dev002
+    .\Invoke-AppGatewayRedirect.ps1 -Environment dev002 -Action Normal
 #>
 
 [CmdletBinding()]
@@ -36,9 +33,6 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidateSet('Maintenance', 'Normal')]
     [string]$Action,
-    
-    [Parameter(Mandatory = $true)]
-    [string]$SubEnvironment,
     
     [Parameter(Mandatory = $false)]
     [string]$MaintenanceRedirectURL = 'https://www.google.com',
@@ -68,9 +62,6 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "App Gateway Redirect Management" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Environment: $Environment" -ForegroundColor Yellow
-if ($SubEnvironment) {
-    Write-Host "Sub-Environment: $SubEnvironment" -ForegroundColor Yellow
-}
 Write-Host "Action: $Action" -ForegroundColor Yellow
 Write-Host "Resource Group: $($envConfig.resourceGroupName)" -ForegroundColor Yellow
 Write-Host "App Gateway: $($envConfig.appGatewayName)" -ForegroundColor Yellow
@@ -84,64 +75,49 @@ $scriptParams = @{
     SubscriptionId = $envConfig.subscriptionId
 }
 
-# Check if subEnvironments structure exists
-if ($envConfig.subEnvironments) {
-    # New structure with sub-environments
-    if (-not $envConfig.subEnvironments.$SubEnvironment) {
-        $availableSubEnvs = $envConfig.subEnvironments.PSObject.Properties.Name -join ', '
-        throw "Sub-environment '$SubEnvironment' not found for environment '$Environment'. Available: $availableSubEnvs"
+if ($Action -eq "Maintenance") {
+    if (-not $envConfig.maintenance) {
+        throw "maintenance configuration not found for environment '$Environment'"
     }
-    $subEnvConfig = $envConfig.subEnvironments.$SubEnvironment
-    
-    if ($Action -eq "Maintenance") {
-        if (-not $subEnvConfig.maintenance) {
-            throw "maintenance configuration not found for sub-environment '$SubEnvironment'"
-        }
-        if (-not $subEnvConfig.maintenance.routingRules) {
-            throw "maintenance.routingRules is required for sub-environment '$SubEnvironment'"
-        }
-        
-        # Use redirect URL from parameter, not from config
-        $scriptParams.MaintenanceRedirectURL = $MaintenanceRedirectURL
-        
-        $routingRulesConfig = @()
-        foreach ($ruleName in $subEnvConfig.maintenance.routingRules) {
-            $routingRulesConfig += @{
-                ruleName = $ruleName
-            }
-        }
-        $scriptParams.RoutingRulesConfig = $routingRulesConfig
-        
-        Write-Host "Sub-Environment: $SubEnvironment" -ForegroundColor Yellow
-        Write-Host "Maintenance Redirect URL: $MaintenanceRedirectURL" -ForegroundColor Yellow
-        Write-Host "Routing Rules: $($subEnvConfig.maintenance.routingRules -join ', ')" -ForegroundColor Yellow
+    if (-not $envConfig.maintenance.routingRules) {
+        throw "maintenance.routingRules is required for environment '$Environment'"
     }
     
-    if ($Action -eq "Normal") {
-        if (-not $subEnvConfig.normal) {
-            throw "normal configuration not found for sub-environment '$SubEnvironment'"
-        }
-        if (-not $subEnvConfig.normal.routingRules) {
-            throw "normal.routingRules is required for sub-environment '$SubEnvironment'"
-        }
-        
-        $scriptParams.RoutingRulesConfig = $subEnvConfig.normal.routingRules | ForEach-Object {
-            @{
-                ruleName = $_.ruleName
-                normalBackendPoolName = $_.backendPoolName
-                normalBackendSettings = $_.backendSettings
-            }
-        }
-        
-        Write-Host "Sub-Environment: $SubEnvironment" -ForegroundColor Yellow
-        Write-Host "Routing Rules to Restore:" -ForegroundColor Yellow
-        foreach ($ruleConfig in $subEnvConfig.normal.routingRules) {
-            Write-Host "  - $($ruleConfig.ruleName): Pool=$($ruleConfig.backendPoolName), Settings=$($ruleConfig.backendSettings)" -ForegroundColor Yellow
+    # Use redirect URL from parameter, not from config
+    $scriptParams.MaintenanceRedirectURL = $MaintenanceRedirectURL
+    
+    $routingRulesConfig = @()
+    foreach ($ruleName in $envConfig.maintenance.routingRules) {
+        $routingRulesConfig += @{
+            ruleName = $ruleName
         }
     }
-} else {
-    # Legacy structure (backward compatibility)
-    throw "Environment '$Environment' does not use sub-environments structure. Sub-environment is required."
+    $scriptParams.RoutingRulesConfig = $routingRulesConfig
+    
+    Write-Host "Maintenance Redirect URL: $MaintenanceRedirectURL" -ForegroundColor Yellow
+    Write-Host "Routing Rules: $($envConfig.maintenance.routingRules -join ', ')" -ForegroundColor Yellow
+}
+
+if ($Action -eq "Normal") {
+    if (-not $envConfig.normal) {
+        throw "normal configuration not found for environment '$Environment'"
+    }
+    if (-not $envConfig.normal.routingRules) {
+        throw "normal.routingRules is required for environment '$Environment'"
+    }
+    
+    $scriptParams.RoutingRulesConfig = $envConfig.normal.routingRules | ForEach-Object {
+        @{
+            ruleName = $_.ruleName
+            normalBackendPoolName = $_.backendPoolName
+            normalBackendSettings = $_.backendSettings
+        }
+    }
+    
+    Write-Host "Routing Rules to Restore:" -ForegroundColor Yellow
+    foreach ($ruleConfig in $envConfig.normal.routingRules) {
+        Write-Host "  - $($ruleConfig.ruleName): Pool=$($ruleConfig.backendPoolName), Settings=$($ruleConfig.backendSettings)" -ForegroundColor Yellow
+    }
 }
 
 $mainScriptPath = Join-Path $scriptDir "Set-AppGatewayRedirect.ps1"

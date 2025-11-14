@@ -13,19 +13,26 @@ Edit `config/environments.json`:
       "resourceGroupName": "rg-appgateway-prod",
       "appGatewayName": "agw-prod",
       "subscriptionId": "12345678-1234-1234-1234-123456789012",
-      "maintenanceRedirectURL": "https://www.google.com",
-      "routingRulesToProcess": [
-        {
-          "ruleName": "rule-api",
-          "normalBackendPoolName": "api-backend-pool",
-          "normalBackendSettings": "api-backend-settings"
-        },
-        {
-          "ruleName": "rule-web",
-          "normalBackendPoolName": "web-backend-pool",
-          "normalBackendSettings": "web-backend-settings"
-        }
-      ]
+      "maintenance": {
+        "routingRules": [
+          "rule-api-prod",
+          "rule-web-prod"
+        ]
+      },
+      "normal": {
+        "routingRules": [
+          {
+            "ruleName": "rule-api-prod",
+            "backendPoolName": "api-backend-pool-prod",
+            "backendSettings": "api-backend-settings-prod"
+          },
+          {
+            "ruleName": "rule-web-prod",
+            "backendPoolName": "web-backend-pool-prod",
+            "backendSettings": "web-backend-settings-prod"
+          }
+        ]
+      }
     }
   }
 }
@@ -54,8 +61,9 @@ Edit `config/environments.json`:
 #### Via Pipeline:
 1. Run the pipeline manually
 2. Select:
-   - Environment: `prod`
+   - Environment: `prod` (or dev, dev002, test, test002, prod002)
    - Action: `Maintenance`
+   - Maintenance Redirect URL: `https://www.google.com` (default)
 
 #### Via PowerShell (Local):
 ```powershell
@@ -63,7 +71,7 @@ Edit `config/environments.json`:
 Connect-AzAccount
 
 # Switch to maintenance
-.\Scripts\Invoke-AppGatewayRedirect.ps1 -Environment prod -Action Maintenance
+.\Scripts\Invoke-AppGatewayRedirect.ps1 -Environment prod -Action Maintenance -MaintenanceRedirectURL 'https://www.google.com'
 
 # Switch back to normal
 .\Scripts\Invoke-AppGatewayRedirect.ps1 -Environment prod -Action Normal
@@ -75,12 +83,12 @@ Connect-AzAccount
 
 1. **Before Patching Starts:**
    ```
-   Pipeline → Run → Environment: prod, Action: Maintenance
+   Pipeline → Run → Environment: prod, Action: Maintenance, Redirect URL: https://www.google.com
    ```
 
 2. **Perform Patching:**
    - Do your patching work
-   - Users see maintenance page
+   - Users see maintenance page (redirected to the specified URL)
 
 3. **After Patching Complete:**
    ```
@@ -95,7 +103,7 @@ Connect-AzAccount
 - Verify service connection has access
 
 **"Backend pool not found" (when switching to Normal)**
-- Verify `normalBackendPoolName` in config matches the actual pool name in App Gateway
+- Verify `backendPoolName` in `normal.routingRules` config matches the actual pool name in App Gateway
 - Check that the backend pool exists in your App Gateway
 
 **Script fails with permission errors**
@@ -106,6 +114,6 @@ Connect-AzAccount
 
 - Read full [README.md](README.md) for advanced usage
 - Set up notifications in the pipeline
-- Consider backing up state files to Azure Blob Storage
 - Add monitoring/alerting for maintenance windows
+- Configure approval policies in Azure DevOps
 

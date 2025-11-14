@@ -12,9 +12,12 @@ parameters:
     type: string
     default: 'dev'
     values:
-      - dev
-      - staging
-      - prod
+      - 'dev'
+      - 'dev002'
+      - 'test'
+      - 'test002'
+      - 'prod'
+      - 'prod002'
   
   - name: action
     displayName: 'Action'
@@ -23,18 +26,6 @@ parameters:
     values:
       - Maintenance
       - Normal
-  
-  - name: subEnvironment
-    displayName: 'Sub-Environment'
-    type: string
-    default: 'dev'
-    values:
-      - 'dev'
-      - 'dev002'
-      - 'test'
-      - 'test002'
-      - 'prod'
-      - 'prod002'
   
   - name: redirectURL
     displayName: 'Maintenance Redirect URL'
@@ -49,11 +40,11 @@ variables:
   - name: workingDirectory
     value: '$(System.DefaultWorkingDirectory)'
   - name: serviceConnectionName
-    ${{ if eq(parameters.environment, 'dev') }}:
+    ${{ if or(eq(parameters.environment, 'dev'), eq(parameters.environment, 'dev002')) }}:
       value: 'YOUR-SPN-NAME-FOR-DEV'  # TODO: Replace with your actual SPN service connection name for dev
-    ${{ elseif eq(parameters.environment, 'staging') }}:
+    ${{ elseif or(eq(parameters.environment, 'test'), eq(parameters.environment, 'test002')) }}:
       value: 'YOUR-SPN-NAME-FOR-STAGING'  # TODO: Replace with your actual SPN service connection name for staging
-    ${{ elseif eq(parameters.environment, 'prod') }}:
+    ${{ elseif or(eq(parameters.environment, 'prod'), eq(parameters.environment, 'prod002')) }}:
       value: 'YOUR-SPN-NAME-FOR-PROD'  # TODO: Replace with your actual SPN service connection name for prod
     ${{ else }}:
       value: 'YOUR-SPN-NAME-FOR-DEFAULT'  # TODO: Replace with your default SPN service connection name
@@ -71,8 +62,7 @@ stages:
               targetType: 'inline'
               script: |
                 Write-Host "Validating parameters..."
-                Write-Host "Environment: ${{ parameters.environment }}"
-                Write-Host "Sub-Environment: ${{ parameters.subEnvironment }}" -ForegroundColor Cyan
+                Write-Host "Environment: ${{ parameters.environment }}" -ForegroundColor Cyan
                 Write-Host "Action: ${{ parameters.action }}"
                 if ('${{ parameters.action }}' -eq 'Maintenance') {
                   Write-Host "Maintenance Redirect URL: ${{ parameters.redirectURL }}" -ForegroundColor Cyan
@@ -86,37 +76,19 @@ stages:
                   $envConfig = $config.environments.'${{ parameters.environment }}'
                   if ($envConfig) {
                     Write-Host "Configuration loaded for environment: ${{ parameters.environment }}"
-                    if ($envConfig.subEnvironments) {
-                      Write-Host "Sub-Environments structure detected" -ForegroundColor Green
-                      $subEnvParam = '${{ parameters.subEnvironment }}'
-                      if ($envConfig.subEnvironments.$subEnvParam) {
-                        $subEnvConfig = $envConfig.subEnvironments.$subEnvParam
-                        Write-Host "Sub-Environment: $subEnvParam" -ForegroundColor Cyan
-                        if ($subEnvConfig.maintenance) {
-                          Write-Host "Maintenance Routing Rules: $($subEnvConfig.maintenance.routingRules -join ', ')" -ForegroundColor Yellow
-                        }
-                        if ($subEnvConfig.normal) {
-                          Write-Host "Normal Mode Routing Rules:" -ForegroundColor Yellow
-                          foreach ($rule in $subEnvConfig.normal.routingRules) {
-                            Write-Host "  - $($rule.ruleName): Pool=$($rule.backendPoolName)" -ForegroundColor Yellow
-                          }
-                        }
-                      } else {
-                        Write-Warning "Sub-environment '$subEnvParam' not found. Available: $($envConfig.subEnvironments.PSObject.Properties.Name -join ', ')"
-                      }
-                    } else {
-                      # Legacy structure
-                      if ($envConfig.maintenance) {
-                        Write-Host "Maintenance Redirect URL: $($envConfig.maintenance.redirectURL)" -ForegroundColor Yellow
-                        Write-Host "Maintenance Routing Rules: $($envConfig.maintenance.routingRules -join ', ')" -ForegroundColor Yellow
-                      }
-                      if ($envConfig.normal) {
-                        Write-Host "Normal Mode Routing Rules:" -ForegroundColor Yellow
-                        foreach ($rule in $envConfig.normal.routingRules) {
-                          Write-Host "  - $($rule.ruleName): Pool=$($rule.backendPoolName)" -ForegroundColor Yellow
-                        }
+                    Write-Host "Resource Group: $($envConfig.resourceGroupName)" -ForegroundColor Yellow
+                    Write-Host "App Gateway: $($envConfig.appGatewayName)" -ForegroundColor Yellow
+                    if ($envConfig.maintenance) {
+                      Write-Host "Maintenance Routing Rules: $($envConfig.maintenance.routingRules -join ', ')" -ForegroundColor Yellow
+                    }
+                    if ($envConfig.normal) {
+                      Write-Host "Normal Mode Routing Rules:" -ForegroundColor Yellow
+                      foreach ($rule in $envConfig.normal.routingRules) {
+                        Write-Host "  - $($rule.ruleName): Pool=$($rule.backendPoolName), Settings=$($rule.backendSettings)" -ForegroundColor Yellow
                       }
                     }
+                  } else {
+                    Write-Warning "Environment '${{ parameters.environment }}' not found. Available: $($config.environments.PSObject.Properties.Name -join ', ')"
                   }
                 } else {
                   Write-Warning "Config file not found at: $configPath"
@@ -146,7 +118,6 @@ stages:
                 OPERATION DETAILS:
                 -----------------
                 Environment: ${{ parameters.environment }}
-                Sub-Environment: ${{ parameters.subEnvironment }}
                 Action: ${{ parameters.action }}
                 App Gateway: (See Validation stage for details)
                 Service Connection (SPN): $(serviceConnectionName)
@@ -191,7 +162,7 @@ stages:
                 • This approval will timeout after 15 minutes if not approved
                 • Once approved, changes will be applied immediately
                 • Review the Validation stage output for complete configuration details
-                • Ensure you have verified the correct environment and sub-environment
+                • Ensure you have verified the correct environment
                 • Double-check the Action (Maintenance/Normal) is correct for your intent
                 
                 ========================================
@@ -211,7 +182,7 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                $args = "-Environment '${{ parameters.environment }}' -Action '${{ parameters.action }}' -SubEnvironment '${{ parameters.subEnvironment }}'"
+                $args = "-Environment '${{ parameters.environment }}' -Action '${{ parameters.action }}'"
                 if ('${{ parameters.action }}' -eq 'Maintenance') {
                   $args += " -MaintenanceRedirectURL '${{ parameters.redirectURL }}'"
                 }
