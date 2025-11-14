@@ -162,13 +162,25 @@ stages:
           - checkout: self
             displayName: 'Checkout Repository'
           
+          - task: PowerShell@2
+            displayName: 'Build Script Arguments'
+            inputs:
+              targetType: 'inline'
+              script: |
+                $args = "-Environment '${{ parameters.environment }}' -Action '${{ parameters.action }}' -SubEnvironment '${{ parameters.subEnvironment }}'"
+                if ('${{ parameters.action }}' -eq 'Maintenance') {
+                  $args += " -MaintenanceRedirectURL '${{ parameters.redirectURL }}'"
+                }
+                Write-Host "##vso[task.setvariable variable=scriptArguments]$args"
+                Write-Host "Script Arguments: $args"
+          
           - task: AzurePowerShell@5
             displayName: 'Azure Login'
             inputs:
               azureSubscription: '$(serviceConnectionName)'  # Automatically selected based on environment
               ScriptType: 'FilePath'
               ScriptPath: '$(workingDirectory)/Scripts/Invoke-AppGatewayRedirect.ps1'
-              ScriptArguments: ${{ if eq(parameters.action, 'Maintenance') }}'-Environment ''${{ parameters.environment }}'' -Action ''${{ parameters.action }}'' -SubEnvironment ''${{ parameters.subEnvironment }}'' -MaintenanceRedirectURL ''${{ parameters.redirectURL }}'''${{ else }}'-Environment ''${{ parameters.environment }}'' -Action ''${{ parameters.action }}'' -SubEnvironment ''${{ parameters.subEnvironment }}'''${{ endif }}
+              ScriptArguments: '$(scriptArguments)'
               azurePowerShellVersion: 'LatestVersion'
               pwsh: true
           
