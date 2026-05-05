@@ -1,0 +1,26 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "AZURE_TENANT_ID": "YOUR_TENANT_ID",
+    "AZURE_CLIENT_ID": "YOUR_APP_REGISTRATION_CLIENT_ID",
+    "AZURE_CLIENT_SECRET": "YOUR_APP_REGISTRATION_CLIENT_SECRET",
+    "DATAVERSE_URL": "https://YOURORG.crm.dynamics.com",
+    "DV_ENTITY_SET_NAME": "@@DV_ENTITY_SET_NAME@@",
+    "DV_ENTITY_LOGICAL_NAME": "@@DV_ENTITY_LOGICAL_NAME@@",
+    "DV_PRIMARY_KEY": "@@DV_PRIMARY_KEY@@",
+    "DV_COL_NAME": "@@COL_NAME@@",
+    "DV_COL_OWNER": "@@COL_OWNER@@",
+    "DV_COL_OS": "@@COL_OS@@",
+    "DV_COL_PATCH_STATUS": "@@COL_PATCH_STATUS@@",
+    "DV_COL_SIZE_GB": "@@COL_SIZE_GB@@",
+    "DV_COL_ENVIRONMENT": "@@COL_ENVIRONMENT@@",
+    "DV_COL_LAST_PATCHED_DATE": "@@COL_LAST_PATCHED_DATE@@",
+    "OS_WINDOWS_VALUE": "Windows",
+    "OS_LINUX_VALUE": "Linux",
+    "PATCHED_VALUE": "Patched",
+    "DEFAULT_PAGE_SIZE": "50",
+    "MAX_PAGE_SIZE": "200"
+  }
+}

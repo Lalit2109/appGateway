@@ -1,0 +1,136 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "RunServerQueryV2 API",
+    "description": "Deterministic Dataverse server inventory query API for Copilot Studio.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://@@FUNCTION_APP_NAME@@.azurewebsites.net/api"
+    }
+  ],
+  "paths": {
+    "/run-server-query": {
+      "post": {
+        "operationId": "RunServerQuery",
+        "summary": "Run server inventory query",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunServerQueryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunServerQueryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RunServerQueryRequest": {
+        "type": "object",
+        "properties": {
+          "questionText": {
+            "type": "string",
+            "description": "Natural language query from user."
+          },
+          "previousFiltersJson": {
+            "type": "string",
+            "description": "JSON array of previous filters for follow-up context."
+          },
+          "pageNumber": {
+            "type": "integer",
+            "default": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "default": 50
+          },
+          "pagingCookie": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        "required": [
+          "questionText"
+        ]
+      },
+      "RunServerQueryResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "clarify",
+              "error"
+            ]
+          },
+          "queryType": {
+            "type": "string",
+            "enum": [
+              "count",
+              "list",
+              "count_and_list"
+            ]
+          },
+          "count": {
+            "type": "integer"
+          },
+          "rowsJson": {
+            "type": "string"
+          },
+          "markdownTable": {
+            "type": "string"
+          },
+          "appliedFiltersJson": {
+            "type": "string"
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextPagingCookie": {
+            "type": "string"
+          },
+          "nextPageNumber": {
+            "type": "integer"
+          },
+          "clarifyQuestion": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "queryType",
+          "count",
+          "rowsJson",
+          "markdownTable",
+          "appliedFiltersJson",
+          "hasMore",
+          "nextPagingCookie",
+          "nextPageNumber",
+          "clarifyQuestion",
+          "message"
+        ]
+      }
+    }
+  }
+}
