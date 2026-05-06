@@ -26,6 +26,9 @@ This module gives you copy/paste assets to build a Copilot Studio agent that:
 
 ## Build steps
 
+Full copy/paste implementation guide:
+- `submodule/docs/power-automate-copilot-copy-paste-guide.md`
+
 ### 1) Dataverse preparation
 
 1. Create a service account with least privilege for required tables only.
