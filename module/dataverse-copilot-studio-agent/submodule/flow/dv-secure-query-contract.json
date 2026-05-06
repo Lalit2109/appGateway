@@ -1,0 +1,124 @@
+{
+  "actionName": "dv_secure_query",
+  "requestSchema": {
+    "type": "object",
+    "required": [
+      "table",
+      "columns",
+      "maxRows"
+    ],
+    "properties": {
+      "table": {
+        "type": "string",
+        "description": "Dataverse table logical name, must be in allowlist"
+      },
+      "columns": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string"
+        },
+        "description": "Requested columns, each must be in allowlist for the table"
+      },
+      "filter": {
+        "type": "string",
+        "description": "Validated OData filter expression"
+      },
+      "orderBy": {
+        "type": "string",
+        "description": "Validated sort expression"
+      },
+      "maxRows": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100,
+        "description": "Maximum rows to return"
+      },
+      "conversationContext": {
+        "type": "object",
+        "properties": {
+          "lastTable": {
+            "type": "string"
+          },
+          "lastFilter": {
+            "type": "string"
+          },
+          "lastRecordIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "userIntent": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "responseSchema": {
+    "type": "object",
+    "required": [
+      "source",
+      "recordCount",
+      "records",
+      "confidence",
+      "warnings"
+    ],
+    "properties": {
+      "source": {
+        "type": "string",
+        "enum": [
+          "dataverse"
+        ]
+      },
+      "table": {
+        "type": "string"
+      },
+      "appliedFilter": {
+        "type": "string"
+      },
+      "recordCount": {
+        "type": "integer"
+      },
+      "records": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "recordIds": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "confidence": {
+        "type": "string",
+        "enum": [
+          "high",
+          "medium",
+          "low"
+        ]
+      },
+      "warnings": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "error": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

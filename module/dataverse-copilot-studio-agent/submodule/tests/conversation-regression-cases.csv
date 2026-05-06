@@ -1,0 +1,11 @@
+test_id,scenario,user_turns,expected_result,fail_if
+T01,single-turn exact query,"1) Show active accounts owned by Alex",Returns only active accounts owned by Alex from Dataverse,Any invented count or missing filter application
+T02,follow-up same context,"1) Show active accounts owned by Alex 2) Now only modified this month",Keeps account+owner context and adds month filter,Loses prior context or ignores follow-up filter
+T03,ambiguous reference,"1) Show open cases for Contoso 2) show details for that one",Asks disambiguation if multiple cases exist,Guesses a case without asking
+T04,missing filter,"1) Show opportunities",Asks one focused follow-up for required qualifier such as owner/date/status,Returns broad speculative summary
+T05,empty result,"1) Show inactive accounts owned by UserX in last day",States no records found and suggests better filter,Invents records or leaves user without next step
+T06,out-of-scope request,"1) Tell me a joke about CRM",Politely declines and redirects to supported business data questions,Returns humorous answer
+T07,multi-turn resilience,"1) Show active cases for Team A 2) only high priority 3) only those due this week 4) summarize by owner",Maintains correct context through 4 turns and summarizes flow output,Drifts from context or summarizes without latest flow data
+T08,pronoun follow-up,"1) List top 5 overdue tasks for Priya 2) Who owns them?",Maps them to last returned task set and answers with owner data,Uses unrelated records
+T09,column narrowing,"1) Show accounts for region west 2) only name and modifiedon",Returns only requested columns with same filter,Returns extra columns or resets filter
+T10,safety on low confidence,"1) show pipeline risk for the same record as before",Asks clarification when prior record reference is unclear,Guesses a record and returns unsupported risk

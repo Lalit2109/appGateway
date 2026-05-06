@@ -1,0 +1,5 @@
+# Local runtime exports
+module/dataverse-copilot-studio-agent/submodule/runtime/
+
+# Logs
+*.log
