@@ -127,6 +127,25 @@ Then add action **Parse JSON** (name it `Parse_JSON`) with this schema:
 }
 ```
 
+### 4.2A MANDATORY: add Dataverse **List rows** actions now
+
+Add these before writing any expressions:
+
+1. Add a **Condition** for operation:
+   - `@equals(body('Parse_JSON')?['operation'], 'count')`
+2. In **If yes** branch:
+   - click **+ New step**
+   - choose **Microsoft Dataverse**
+   - action: **List rows**
+   - rename action to: `List_rows_count`
+3. In **If no** branch:
+   - click **+ New step**
+   - choose **Microsoft Dataverse**
+   - action: **List rows**
+   - rename action to: `List_rows_list`
+
+You will fill table/filter/select fields in section **4.5A** below.
+
 ### 4.3 Add clarification short-circuit branch
 
 Add a **Condition**:
