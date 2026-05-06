@@ -186,6 +186,18 @@ join(variables('vFilterParts'),' and ')
 Add Condition:
 - `@equals(body('Parse_JSON')?['operation'], 'count')`
 
+### 4.5A Explicit step: add Dataverse **List rows** action
+
+Do this inside each branch of the condition above:
+
+1. Click **+ New step** inside the branch.
+2. Search connector: **Microsoft Dataverse**.
+3. Select action: **List rows**.
+4. Rename actions for clarity:
+   - count branch action name: `List_rows_count`
+   - list branch action name: `List_rows_list`
+5. Fill fields exactly as described below.
+
 #### If count
 Use **Dataverse - List rows**:
 - Table: `cr2f_servers`
