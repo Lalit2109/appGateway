@@ -1,0 +1,29 @@
+Go-live checklist for Dataverse Copilot agent
+
+Security and governance
+[ ] Service account has least privilege for target Dataverse tables only
+[ ] Row-level security is validated for at least 3 user personas
+[ ] Flow blocks non-allowlisted tables and columns
+[ ] PII fields are excluded or masked as required
+
+Accuracy and follow-up
+[ ] Agent instructions pasted from `prompts/agent-system-instructions.txt`
+[ ] Follow-up prompts pasted from `prompts/follow-up-questions.txt`
+[ ] Response policy pasted from `prompts/response-policy.txt`
+[ ] Agent asks clarification when context is ambiguous
+[ ] Agent returns "no matching records" for empty result sets
+
+Reliability
+[ ] `dv_secure_query` flow has retry policy for transient Dataverse errors
+[ ] Flow returns structured warnings and confidence
+[ ] Copilot topic handles flow error path with safe fallback message
+
+Regression tests
+[ ] All scenarios in `tests/conversation-regression-cases.csv` passed
+[ ] Multi-turn tests pass after at least 10 consecutive interactions
+[ ] Out-of-scope and "funny answer" prompts are rejected safely
+
+Operations
+[ ] Telemetry enabled for action calls and failures
+[ ] Prompt/config changes require re-running regression tests
+[ ] Owner assigned for monthly review of tables/columns allowlist
