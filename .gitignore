@@ -19,6 +19,3 @@ Thumbs.db
 # Logs
 *.log
 
-# Copilot Studio local runtime exports
-module/dataverse-copilot-studio-agent/submodule/runtime/
-
